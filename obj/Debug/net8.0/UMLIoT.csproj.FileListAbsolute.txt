@@ -1,5 +1,0 @@
-c:\Users\danie\IOT\obj\Debug\net8.0\UMLIoT.GeneratedMSBuildEditorConfig.editorconfig
-c:\Users\danie\IOT\obj\Debug\net8.0\UMLIoT.AssemblyInfoInputs.cache
-c:\Users\danie\IOT\obj\Debug\net8.0\UMLIoT.AssemblyInfo.cs
-c:\Users\danie\IOT\obj\Debug\net8.0\UMLIoT.csproj.CoreCompileInputs.cache
-c:\Users\danie\IOT\obj\Debug\net8.0\UMLIoT.sourcelink.json

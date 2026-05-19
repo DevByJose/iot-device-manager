@@ -1,0 +1,70 @@
+﻿using UMLIoT.Core.Devices;
+using UMLIoT.Core.Users;
+using UMLIoT.Patterns.Command;
+using UMLIoT.Patterns.Factory.Devices;
+using UMLIoT.Patterns.Observer;
+
+namespace UMLIoT.Core.Controllers;
+
+public class ControladorIOT
+{
+    private readonly List<IDevice> devices = new();
+    private readonly List<User> users = new();
+    private DeviceEventManager? eventManager;
+
+    public IDevice addDevice(DeviceCreator creator)
+    {
+        var device = creator.DeviceCreatorMethod();
+        devices.Add(device);
+        eventManager?.notifyObservers(device);
+        return device;
+    }
+
+    public bool removeDevice(int id)
+    {
+        var device = devices.FirstOrDefault(d => d is Device concrete && concrete.getID() == id);
+        if (device is null)
+        {
+            return false;
+        }
+
+        devices.Remove(device);
+        return true;
+    }
+
+    public string getDeviceStatus(int id)
+    {
+        var device = devices.FirstOrDefault(d => d is Device concrete && concrete.getID() == id);
+        return device is null ? "Device not found" : device.getStatus().GetType().Name;
+    }
+
+    public void executeCommand(ICommand command)
+    {
+        command.execute();
+    }
+
+    public IDevice? getDeviceById(int id)
+    {
+        return devices.FirstOrDefault(current => current is Device concrete && concrete.getID() == id);
+    }
+
+    public List<IDevice> getAllDevices()
+    {
+        return devices;
+    }
+
+    public Device? findDeviceById(int id)
+    {
+        return devices.OfType<Device>().FirstOrDefault(x => x.getID() == id);
+    }
+
+    public void addUser(User user)
+    {
+        users.Add(user);
+    }
+
+    public void setEventManager(DeviceEventManager eventManager)
+    {
+        this.eventManager = eventManager;
+    }
+}

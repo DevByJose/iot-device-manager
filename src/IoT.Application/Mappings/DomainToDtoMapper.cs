@@ -1,0 +1,36 @@
+using IoT.Application.DTOs;
+using IoT.Domain.Entities;
+
+namespace IoT.Application.Mappings;
+
+/// <summary>
+/// Mapeo explícito entre entidades de dominio y DTOs (SRP). Sin dependencias de librerías externas.
+/// </summary>
+public static class DomainToDtoMapper
+{
+    public static HogarDto ToDto(Hogar hogar) => new(
+        hogar.Id, hogar.Nombre, hogar.Direccion.Ciudad, hogar.Direccion.Pais,
+        hogar.Dispositivos.Count, hogar.Habitaciones.Count);
+
+    public static DispositivoDto ToDto(Dispositivo dispositivo) => new(
+        dispositivo.Id, dispositivo.Nombre, dispositivo.TipoDispositivo,
+        dispositivo.Identificador.Valor, dispositivo.Estado, dispositivo.EstaConectado,
+        dispositivo.Firmware.ToString(), string.Empty);
+
+    public static EscenaDto ToDto(Escena escena) => new(
+        escena.Id, escena.Nombre.Valor, escena.Activa,
+        escena.Acciones.Count, escena.Disparadores.Count);
+
+    public static EstadoDispositivoDto ToDto(EstadoDispositivo estado) => new(
+        estado.DispositivoId, estado.EstadoActual, estado.UltimoValorReportado,
+        estado.UltimaActualizacion, estado.Conectado, estado.Alertas.Count);
+
+    public static LecturaSensorDto ToDto(LecturaSensor lectura) => new(
+        lectura.Valor, lectura.Unidad, lectura.Timestamp);
+
+    public static IReadOnlyList<DispositivoDto> ToDtoList(IEnumerable<Dispositivo> dispositivos)
+        => dispositivos.Select(ToDto).ToList().AsReadOnly();
+
+    public static IReadOnlyList<HogarDto> ToDtoList(IEnumerable<Hogar> hogares)
+        => hogares.Select(ToDto).ToList().AsReadOnly();
+}
