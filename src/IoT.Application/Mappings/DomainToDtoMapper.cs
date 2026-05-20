@@ -33,4 +33,10 @@ public static class DomainToDtoMapper
 
     public static IReadOnlyList<HogarDto> ToDtoList(IEnumerable<Hogar> hogares)
         => hogares.Select(ToDto).ToList().AsReadOnly();
+
+    public static HabitacionDto ToDto(Habitacion habitacion) => new(
+        habitacion.Id, habitacion.Nombre, habitacion.HogarId);
+
+    public static IReadOnlyList<HabitacionDto> ToDtoList(IEnumerable<Habitacion> habitaciones)
+        => habitaciones.Select(ToDto).ToList().AsReadOnly();
 }

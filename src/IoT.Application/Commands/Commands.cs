@@ -34,3 +34,8 @@ public sealed record EjecutarEscenaCommand(int EscenaId, string Origen);
 /// Intención de enviar un comando a un dispositivo. Inmutable.
 /// </summary>
 public sealed record EnviarComandoCommand(int DispositivoId, string Comando, Dictionary<string, string>? Parametros = null);
+
+/// <summary>
+/// Intención de agregar una habitación a un hogar existente. Inmutable.
+/// </summary>
+public sealed record AgregarHabitacionCommand(int HogarId, string Nombre);

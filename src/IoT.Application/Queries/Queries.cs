@@ -19,3 +19,8 @@ public sealed record ObtenerTelemetriaQuery(int DispositivoId, DateTime Desde, D
 /// Intención de lectura: obtener todos los hogares de un cliente.
 /// </summary>
 public sealed record ObtenerHogaresQuery(int ClienteId);
+
+/// <summary>
+/// Intención de lectura: obtener habitaciones de un hogar.
+/// </summary>
+public sealed record ObtenerHabitacionesQuery(int HogarId);

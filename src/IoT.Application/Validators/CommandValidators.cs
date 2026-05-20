@@ -51,4 +51,12 @@ public static class CommandValidators
         if (string.IsNullOrWhiteSpace(command.Origen))
             throw new DomainException("El origen de la ejecución es obligatorio.");
     }
+
+    public static void Validate(AgregarHabitacionCommand command)
+    {
+        if (command.HogarId <= 0)
+            throw new DomainException("El ID del hogar debe ser mayor a 0.");
+        if (string.IsNullOrWhiteSpace(command.Nombre))
+            throw new DomainException("El nombre de la habitación es obligatorio.");
+    }
 }

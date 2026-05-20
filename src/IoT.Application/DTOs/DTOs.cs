@@ -36,3 +36,8 @@ public sealed record RegisterDeviceResponse(int DispositivoId, string Nombre, st
 /// Respuesta al ejecutar una escena.
 /// </summary>
 public sealed record EjecutarEscenaResponse(int EscenaId, int ComandosEnviados, int ComandosFallidos, List<string> Detalles);
+
+/// <summary>
+/// DTO para transportar datos de Habitacion.
+/// </summary>
+public sealed record HabitacionDto(int Id, string Nombre, int HogarId);

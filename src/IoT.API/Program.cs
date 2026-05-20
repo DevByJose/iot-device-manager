@@ -40,6 +40,8 @@ builder.Services.AddScoped<EjecutarEscenaHandler>();
 builder.Services.AddScoped<ConsultarEstadoHandler>();
 builder.Services.AddScoped<ObtenerDispositivosHandler>();
 builder.Services.AddScoped<ObtenerHogaresHandler>();
+builder.Services.AddScoped<AgregarHabitacionHandler>();
+builder.Services.AddScoped<ObtenerHabitacionesHandler>();
 
 // === Capa de API: Controllers ===
 builder.Services.AddControllers();

@@ -201,3 +201,58 @@ public class ObtenerHogaresHandler
         return DomainToDtoMapper.ToDtoList(hogares);
     }
 }
+
+/// <summary>
+/// Orquesta agregar una habitación a un hogar existente.
+/// Pasa por el Aggregate Root Hogar para proteger las invariantes (DDD).
+/// </summary>
+public class AgregarHabitacionHandler
+{
+    private readonly IHogarRepository _hogarRepo;
+    private readonly IUnitOfWork _uow;
+    private readonly IEventPublisher _eventPublisher;
+
+    public AgregarHabitacionHandler(IHogarRepository hogarRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
+    {
+        _hogarRepo = hogarRepo;
+        _uow = uow;
+        _eventPublisher = eventPublisher;
+    }
+
+    public async Task<HabitacionDto> HandleAsync(AgregarHabitacionCommand command)
+    {
+        CommandValidators.Validate(command);
+
+        var hogar = await _hogarRepo.GetByIdAsync(command.HogarId)
+            ?? throw new DomainException($"Hogar {command.HogarId} no encontrado.");
+
+        var habitacion = hogar.AgregarHabitacion(0, command.Nombre);
+
+        await _hogarRepo.SaveAsync(hogar);
+        await _uow.SaveChangesAsync();
+        await _eventPublisher.PublishAllAsync(hogar.DomainEvents);
+        hogar.ClearDomainEvents();
+
+        return DomainToDtoMapper.ToDto(habitacion);
+    }
+}
+
+/// <summary>
+/// Maneja la consulta de habitaciones de un hogar (SRP).
+/// </summary>
+public class ObtenerHabitacionesHandler
+{
+    private readonly IHogarRepository _hogarRepo;
+
+    public ObtenerHabitacionesHandler(IHogarRepository hogarRepo)
+    {
+        _hogarRepo = hogarRepo;
+    }
+
+    public async Task<IReadOnlyList<HabitacionDto>> HandleAsync(ObtenerHabitacionesQuery query)
+    {
+        var hogar = await _hogarRepo.GetByIdAsync(query.HogarId);
+        if (hogar == null) return new List<HabitacionDto>().AsReadOnly();
+        return DomainToDtoMapper.ToDtoList(hogar.Habitaciones);
+    }
+}

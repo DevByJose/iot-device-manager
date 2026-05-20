@@ -16,11 +16,19 @@ public class HogarController : ControllerBase
 {
     private readonly RegistrarHogarHandler _registrarHandler;
     private readonly ObtenerHogaresHandler _obtenerHandler;
+    private readonly AgregarHabitacionHandler _agregarHabitacionHandler;
+    private readonly ObtenerHabitacionesHandler _obtenerHabitacionesHandler;
 
-    public HogarController(RegistrarHogarHandler registrarHandler, ObtenerHogaresHandler obtenerHandler)
+    public HogarController(
+        RegistrarHogarHandler registrarHandler,
+        ObtenerHogaresHandler obtenerHandler,
+        AgregarHabitacionHandler agregarHabitacionHandler,
+        ObtenerHabitacionesHandler obtenerHabitacionesHandler)
     {
         _registrarHandler = registrarHandler;
         _obtenerHandler = obtenerHandler;
+        _agregarHabitacionHandler = agregarHabitacionHandler;
+        _obtenerHabitacionesHandler = obtenerHabitacionesHandler;
     }
 
     [HttpPost]
@@ -34,6 +42,20 @@ public class HogarController : ControllerBase
     public async Task<IActionResult> ObtenerPorCliente(int clienteId)
     {
         var result = await _obtenerHandler.HandleAsync(new ObtenerHogaresQuery(clienteId));
+        return Ok(result);
+    }
+
+    [HttpPost("{hogarId}/habitacion")]
+    public async Task<IActionResult> AgregarHabitacion(int hogarId, [FromBody] AgregarHabitacionCommand command)
+    {
+        var result = await _agregarHabitacionHandler.HandleAsync(command with { HogarId = hogarId });
+        return CreatedAtAction(nameof(ObtenerHabitaciones), new { hogarId, id = result.Id }, result);
+    }
+
+    [HttpGet("{hogarId}/habitacion")]
+    public async Task<IActionResult> ObtenerHabitaciones(int hogarId)
+    {
+        var result = await _obtenerHabitacionesHandler.HandleAsync(new ObtenerHabitacionesQuery(hogarId));
         return Ok(result);
     }
 }
