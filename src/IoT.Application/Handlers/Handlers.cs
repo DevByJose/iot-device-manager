@@ -11,16 +11,18 @@ using IoT.Domain.ValueObjects;
 namespace IoT.Application.Handlers;
 
 /// <summary>
-/// Orquesta el registro de un hogar. No valida ni persiste (SRP).
+/// Orquesta el registro de un hogar. Persiste y genera ID antes de mapear el DTO (SRP).
 /// </summary>
 public class RegistrarHogarHandler
 {
     private readonly IHogarRepository _hogarRepo;
+    private readonly IUnitOfWork _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public RegistrarHogarHandler(IHogarRepository hogarRepo, IEventPublisher eventPublisher)
+    public RegistrarHogarHandler(IHogarRepository hogarRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
     {
         _hogarRepo = hogarRepo;
+        _uow = uow;
         _eventPublisher = eventPublisher;
     }
 
@@ -30,6 +32,7 @@ public class RegistrarHogarHandler
         var hogar = new Hogar(0, command.Nombre, direccion, command.ClienteId);
 
         await _hogarRepo.SaveAsync(hogar);
+        await _uow.SaveChangesAsync();
         await _eventPublisher.PublishAllAsync(hogar.DomainEvents);
         hogar.ClearDomainEvents();
 
@@ -44,13 +47,15 @@ public class RegistrarDispositivoHandler
 {
     private readonly IHogarRepository _hogarRepo;
     private readonly SvcRegistroDispositivo _svcRegistro;
+    private readonly IUnitOfWork _uow;
     private readonly IEventPublisher _eventPublisher;
 
     public RegistrarDispositivoHandler(IHogarRepository hogarRepo, SvcRegistroDispositivo svcRegistro,
-        IEventPublisher eventPublisher)
+        IUnitOfWork uow, IEventPublisher eventPublisher)
     {
         _hogarRepo = hogarRepo;
         _svcRegistro = svcRegistro;
+        _uow = uow;
         _eventPublisher = eventPublisher;
     }
 
@@ -66,6 +71,7 @@ public class RegistrarDispositivoHandler
             command.TipoDispositivo, identificador, firmware, command.HabitacionId);
 
         await _hogarRepo.SaveAsync(hogar);
+        await _uow.SaveChangesAsync();
         await _eventPublisher.PublishAllAsync(hogar.DomainEvents);
         hogar.ClearDomainEvents();
 
@@ -79,11 +85,13 @@ public class RegistrarDispositivoHandler
 public class CrearEscenaHandler
 {
     private readonly IEscenaRepository _escenaRepo;
+    private readonly IUnitOfWork _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public CrearEscenaHandler(IEscenaRepository escenaRepo, IEventPublisher eventPublisher)
+    public CrearEscenaHandler(IEscenaRepository escenaRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
     {
         _escenaRepo = escenaRepo;
+        _uow = uow;
         _eventPublisher = eventPublisher;
     }
 
@@ -101,6 +109,7 @@ public class CrearEscenaHandler
         }
 
         await _escenaRepo.SaveAsync(escena);
+        await _uow.SaveChangesAsync();
         await _eventPublisher.PublishAllAsync(escena.DomainEvents);
         escena.ClearDomainEvents();
 
@@ -109,7 +118,7 @@ public class CrearEscenaHandler
 }
 
 /// <summary>
-/// Orquesta la ejecución de una escena. El controller es responsable de la transacción (SRP).
+/// Orquesta la ejecución de una escena. El controller gestiona la transacción explícita (SRP).
 /// </summary>
 public class EjecutarEscenaHandler
 {
@@ -228,11 +237,13 @@ public class ObtenerHogaresHandler
 public class AgregarHabitacionHandler
 {
     private readonly IHogarRepository _hogarRepo;
+    private readonly IUnitOfWork _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public AgregarHabitacionHandler(IHogarRepository hogarRepo, IEventPublisher eventPublisher)
+    public AgregarHabitacionHandler(IHogarRepository hogarRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
     {
         _hogarRepo = hogarRepo;
+        _uow = uow;
         _eventPublisher = eventPublisher;
     }
 
@@ -244,10 +255,136 @@ public class AgregarHabitacionHandler
         var habitacion = hogar.AgregarHabitacion(0, command.Nombre);
 
         await _hogarRepo.SaveAsync(hogar);
+        await _uow.SaveChangesAsync();
         await _eventPublisher.PublishAllAsync(hogar.DomainEvents);
         hogar.ClearDomainEvents();
 
         return DomainToDtoMapper.ToDto(habitacion);
+    }
+}
+
+/// <summary>
+/// Envía un comando directo a un dispositivo validando tipo y conectividad (SRP).
+/// </summary>
+public class EnviarComandoHandler
+{
+    private readonly IDispositivoRepository _dispositivoRepo;
+    private readonly IComandoRepository _comandoRepo;
+    private readonly SvcValidacionComando _svcValidacion;
+    private readonly IUnitOfWork _uow;
+    private readonly IEventPublisher _eventPublisher;
+
+    public EnviarComandoHandler(IDispositivoRepository dispositivoRepo, IComandoRepository comandoRepo,
+        SvcValidacionComando svcValidacion, IUnitOfWork uow, IEventPublisher eventPublisher)
+    {
+        _dispositivoRepo = dispositivoRepo;
+        _comandoRepo = comandoRepo;
+        _svcValidacion = svcValidacion;
+        _uow = uow;
+        _eventPublisher = eventPublisher;
+    }
+
+    public async Task<ComandoDispositivoDto> HandleAsync(EnviarComandoCommand command)
+    {
+        var dispositivo = await _dispositivoRepo.GetByIdAsync(command.DispositivoId)
+            ?? throw new DomainException($"Dispositivo {command.DispositivoId} no encontrado.");
+
+        _svcValidacion.Validar(dispositivo, command.Comando);
+
+        var parametros = command.Parametros?
+            .Select(p => new ParametroComando(p.Key, p.Value, "string"))
+            .ToList();
+
+        var cmd = new ComandoDispositivo(0, command.DispositivoId, command.Comando, parametros);
+        cmd.MarcarEnviado();
+
+        await _comandoRepo.SaveAllAsync(new[] { cmd });
+        await _uow.SaveChangesAsync();
+        await _eventPublisher.PublishAllAsync(cmd.DomainEvents);
+        cmd.ClearDomainEvents();
+
+        return new ComandoDispositivoDto(cmd.Id, cmd.DispositivoId, cmd.Comando, cmd.Estado, cmd.CreadoEn);
+    }
+}
+
+/// <summary>
+/// Marca un dispositivo como conectado pasando por el Aggregate Root Hogar (DDD).
+/// </summary>
+public class ConectarDispositivoHandler
+{
+    private readonly IDispositivoRepository _dispositivoRepo;
+    private readonly IHogarRepository _hogarRepo;
+    private readonly IUnitOfWork _uow;
+
+    public ConectarDispositivoHandler(IDispositivoRepository dispositivoRepo,
+        IHogarRepository hogarRepo, IUnitOfWork uow)
+    {
+        _dispositivoRepo = dispositivoRepo;
+        _hogarRepo = hogarRepo;
+        _uow = uow;
+    }
+
+    public async Task HandleAsync(int dispositivoId)
+    {
+        var dispositivo = await _dispositivoRepo.GetByIdAsync(dispositivoId)
+            ?? throw new DomainException($"Dispositivo {dispositivoId} no encontrado.");
+
+        var hogar = await _hogarRepo.GetByIdAsync(dispositivo.HogarId)
+            ?? throw new DomainException($"Hogar del dispositivo no encontrado.");
+
+        hogar.ConectarDispositivo(dispositivoId);
+        await _hogarRepo.SaveAsync(hogar);
+        await _uow.SaveChangesAsync();
+    }
+}
+
+/// <summary>
+/// Marca un dispositivo como desconectado pasando por el Aggregate Root Hogar (DDD).
+/// </summary>
+public class DesconectarDispositivoHandler
+{
+    private readonly IDispositivoRepository _dispositivoRepo;
+    private readonly IHogarRepository _hogarRepo;
+    private readonly IUnitOfWork _uow;
+
+    public DesconectarDispositivoHandler(IDispositivoRepository dispositivoRepo,
+        IHogarRepository hogarRepo, IUnitOfWork uow)
+    {
+        _dispositivoRepo = dispositivoRepo;
+        _hogarRepo = hogarRepo;
+        _uow = uow;
+    }
+
+    public async Task HandleAsync(int dispositivoId)
+    {
+        var dispositivo = await _dispositivoRepo.GetByIdAsync(dispositivoId)
+            ?? throw new DomainException($"Dispositivo {dispositivoId} no encontrado.");
+
+        var hogar = await _hogarRepo.GetByIdAsync(dispositivo.HogarId)
+            ?? throw new DomainException($"Hogar del dispositivo no encontrado.");
+
+        hogar.DesconectarDispositivo(dispositivoId);
+        await _hogarRepo.SaveAsync(hogar);
+        await _uow.SaveChangesAsync();
+    }
+}
+
+/// <summary>
+/// Consulta el historial de lecturas de un dispositivo en un rango de fechas (SRP).
+/// </summary>
+public class ObtenerTelemetriaHandler
+{
+    private readonly IEstadoRepository _estadoRepo;
+
+    public ObtenerTelemetriaHandler(IEstadoRepository estadoRepo)
+    {
+        _estadoRepo = estadoRepo;
+    }
+
+    public async Task<IReadOnlyList<LecturaSensorDto>> HandleAsync(ObtenerTelemetriaQuery query)
+    {
+        var lecturas = await _estadoRepo.GetLecturasAsync(query.DispositivoId, query.Desde, query.Hasta);
+        return lecturas.Select(DomainToDtoMapper.ToDto).ToList().AsReadOnly();
     }
 }
 

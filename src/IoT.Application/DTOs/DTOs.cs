@@ -41,3 +41,8 @@ public sealed record EjecutarEscenaResponse(int EscenaId, int ComandosEnviados, 
 /// DTO para transportar datos de Habitacion.
 /// </summary>
 public sealed record HabitacionDto(int Id, string Nombre, int HogarId);
+
+/// <summary>
+/// DTO de respuesta al enviar un comando a un dispositivo.
+/// </summary>
+public sealed record ComandoDispositivoDto(int Id, int DispositivoId, string Comando, string Estado, DateTime CreadoEn);

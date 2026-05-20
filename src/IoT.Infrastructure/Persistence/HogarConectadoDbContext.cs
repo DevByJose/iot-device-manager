@@ -1,5 +1,6 @@
 using IoT.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace IoT.Infrastructure.Persistence;
 
@@ -99,7 +100,11 @@ public class HogarConectadoDbContext : DbContext
                               .ToList()
                               .AsReadOnly()
                  )
-                 .HasColumnType("TEXT");
+                 .HasColumnType("TEXT")
+                 .Metadata.SetValueComparer(new ValueComparer<IReadOnlyList<DayOfWeek>>(
+                     (a, b) => a != null && b != null && a.SequenceEqual(b),
+                     v => v.Aggregate(0, (h, d) => HashCode.Combine(h, d.GetHashCode())),
+                     v => (IReadOnlyList<DayOfWeek>)v.ToList().AsReadOnly()));
             });
         });
 
@@ -129,6 +134,7 @@ public class HogarConectadoDbContext : DbContext
         modelBuilder.Entity<ComandoDispositivo>(e =>
         {
             e.HasKey(c => c.Id);
+            e.Property(c => c.Id).ValueGeneratedOnAdd();
             e.Property(c => c.Comando).IsRequired().HasMaxLength(50);
             e.Property(c => c.Estado).IsRequired().HasMaxLength(20);
             e.Ignore(c => c.Parametros);

@@ -87,6 +87,20 @@ public class Hogar : AggregateRoot
         dispositivo.MoverAHabitacion(habitacionDestinoId);
     }
 
+    public void ConectarDispositivo(int dispositivoId)
+    {
+        var dispositivo = _dispositivos.FirstOrDefault(d => d.Id == dispositivoId)
+            ?? throw new DomainException($"El dispositivo {dispositivoId} no existe en este hogar.");
+        dispositivo.Conectar();
+    }
+
+    public void DesconectarDispositivo(int dispositivoId)
+    {
+        var dispositivo = _dispositivos.FirstOrDefault(d => d.Id == dispositivoId)
+            ?? throw new DomainException($"El dispositivo {dispositivoId} no existe en este hogar.");
+        dispositivo.Desconectar();
+    }
+
     public void EstablecerUbicacion(GeoLocalizacion ubicacion)
     {
         Ubicacion = ubicacion ?? throw new DomainException("La ubicación no puede ser nula.");

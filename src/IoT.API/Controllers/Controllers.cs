@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace IoT.API.Controllers;
 
 /// <summary>
-/// Controller delgado para Hogares. Valida en el boundary y maneja consistencia (SRP).
+/// Controller delgado para Hogares. Valida en el boundary (SRP).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -18,20 +18,17 @@ public class HogarController : ControllerBase
     private readonly ObtenerHogaresHandler _obtenerHandler;
     private readonly AgregarHabitacionHandler _agregarHabitacionHandler;
     private readonly ObtenerHabitacionesHandler _obtenerHabitacionesHandler;
-    private readonly IUnitOfWork _uow;
 
     public HogarController(
         RegistrarHogarHandler registrarHandler,
         ObtenerHogaresHandler obtenerHandler,
         AgregarHabitacionHandler agregarHabitacionHandler,
-        ObtenerHabitacionesHandler obtenerHabitacionesHandler,
-        IUnitOfWork uow)
+        ObtenerHabitacionesHandler obtenerHabitacionesHandler)
     {
         _registrarHandler = registrarHandler;
         _obtenerHandler = obtenerHandler;
         _agregarHabitacionHandler = agregarHabitacionHandler;
         _obtenerHabitacionesHandler = obtenerHabitacionesHandler;
-        _uow = uow;
     }
 
     [HttpPost]
@@ -39,7 +36,6 @@ public class HogarController : ControllerBase
     {
         CommandValidators.Validate(command);
         var result = await _registrarHandler.HandleAsync(command);
-        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(Registrar), new { id = result.Id }, result);
     }
 
@@ -56,7 +52,6 @@ public class HogarController : ControllerBase
         var cmd = command with { HogarId = hogarId };
         CommandValidators.Validate(cmd);
         var result = await _agregarHabitacionHandler.HandleAsync(cmd);
-        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(ObtenerHabitaciones), new { hogarId, id = result.Id }, result);
     }
 
@@ -69,7 +64,7 @@ public class HogarController : ControllerBase
 }
 
 /// <summary>
-/// Controller delgado para Dispositivos. Valida en el boundary y maneja consistencia (SRP).
+/// Controller delgado para Dispositivos. Valida en el boundary (SRP).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -77,14 +72,22 @@ public class DispositivoController : ControllerBase
 {
     private readonly RegistrarDispositivoHandler _registrarHandler;
     private readonly ObtenerDispositivosHandler _obtenerHandler;
-    private readonly IUnitOfWork _uow;
+    private readonly EnviarComandoHandler _enviarComandoHandler;
+    private readonly ConectarDispositivoHandler _conectarHandler;
+    private readonly DesconectarDispositivoHandler _desconectarHandler;
 
-    public DispositivoController(RegistrarDispositivoHandler registrarHandler,
-        ObtenerDispositivosHandler obtenerHandler, IUnitOfWork uow)
+    public DispositivoController(
+        RegistrarDispositivoHandler registrarHandler,
+        ObtenerDispositivosHandler obtenerHandler,
+        EnviarComandoHandler enviarComandoHandler,
+        ConectarDispositivoHandler conectarHandler,
+        DesconectarDispositivoHandler desconectarHandler)
     {
         _registrarHandler = registrarHandler;
         _obtenerHandler = obtenerHandler;
-        _uow = uow;
+        _enviarComandoHandler = enviarComandoHandler;
+        _conectarHandler = conectarHandler;
+        _desconectarHandler = desconectarHandler;
     }
 
     [HttpPost]
@@ -92,7 +95,6 @@ public class DispositivoController : ControllerBase
     {
         CommandValidators.Validate(command);
         var result = await _registrarHandler.HandleAsync(command);
-        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(Registrar), new { id = result.DispositivoId }, result);
     }
 
@@ -102,10 +104,33 @@ public class DispositivoController : ControllerBase
         var result = await _obtenerHandler.HandleAsync(new ObtenerDispositivosQuery(hogarId));
         return Ok(result);
     }
+
+    [HttpPost("{id}/comando")]
+    public async Task<IActionResult> EnviarComando(int id, [FromBody] EnviarComandoCommand command)
+    {
+        var cmd = command with { DispositivoId = id };
+        CommandValidators.Validate(cmd);
+        var result = await _enviarComandoHandler.HandleAsync(cmd);
+        return Ok(result);
+    }
+
+    [HttpPut("{id}/conectar")]
+    public async Task<IActionResult> Conectar(int id)
+    {
+        await _conectarHandler.HandleAsync(id);
+        return NoContent();
+    }
+
+    [HttpPut("{id}/desconectar")]
+    public async Task<IActionResult> Desconectar(int id)
+    {
+        await _desconectarHandler.HandleAsync(id);
+        return NoContent();
+    }
 }
 
 /// <summary>
-/// Controller delgado para Escenas. Maneja el ciclo transaccional completo (SRP).
+/// Controller para Escenas. Maneja la transacción explícita en la ejecución (commits/rollbacks).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -127,7 +152,6 @@ public class EscenaController : ControllerBase
     {
         CommandValidators.Validate(command);
         var result = await _crearHandler.HandleAsync(command);
-        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(Crear), new { id = result.Id }, result);
     }
 
@@ -159,10 +183,12 @@ public class EscenaController : ControllerBase
 public class EstadoController : ControllerBase
 {
     private readonly ConsultarEstadoHandler _consultarHandler;
+    private readonly ObtenerTelemetriaHandler _telemetriaHandler;
 
-    public EstadoController(ConsultarEstadoHandler consultarHandler)
+    public EstadoController(ConsultarEstadoHandler consultarHandler, ObtenerTelemetriaHandler telemetriaHandler)
     {
         _consultarHandler = consultarHandler;
+        _telemetriaHandler = telemetriaHandler;
     }
 
     [HttpGet("{dispositivoId}")]
@@ -170,6 +196,15 @@ public class EstadoController : ControllerBase
     {
         var result = await _consultarHandler.HandleAsync(new ConsultarEstadoQuery(dispositivoId));
         if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("{dispositivoId}/telemetria")]
+    public async Task<IActionResult> ObtenerTelemetria(int dispositivoId,
+        [FromQuery] DateTime desde, [FromQuery] DateTime hasta)
+    {
+        var result = await _telemetriaHandler.HandleAsync(
+            new ObtenerTelemetriaQuery(dispositivoId, desde, hasta));
         return Ok(result);
     }
 }
