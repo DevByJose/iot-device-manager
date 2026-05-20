@@ -19,7 +19,6 @@ public class SvcEjecucionEscena
     {
         var acciones = escena.Ejecutar(origen);
         var comandos = new List<ComandoDispositivo>();
-        int comandoId = 0;
 
         foreach (var accion in acciones)
         {
@@ -27,14 +26,14 @@ public class SvcEjecucionEscena
             if (dispositivo == null || !dispositivo.PuedeEjecutarComando())
             {
                 // Política: si un dispositivo no está disponible, se marca fallo y continúa
-                var comandoFallido = new ComandoDispositivo(comandoId++, accion.DispositivoId, accion.Comando);
+                var comandoFallido = new ComandoDispositivo(0, accion.DispositivoId, accion.Comando);
                 comandoFallido.MarcarFallido("Dispositivo no disponible");
                 comandos.Add(comandoFallido);
                 continue;
             }
 
             var parametros = accion.Parametro != null ? new List<ValueObjects.ParametroComando> { accion.Parametro } : null;
-            var comando = new ComandoDispositivo(comandoId++, accion.DispositivoId, accion.Comando, parametros);
+            var comando = new ComandoDispositivo(0, accion.DispositivoId, accion.Comando, parametros);
             comando.MarcarEnviado();
             comandos.Add(comando);
         }

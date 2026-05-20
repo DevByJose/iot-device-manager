@@ -38,8 +38,15 @@ public class Hogar : AggregateRoot
         Direccion = direccion ?? throw new DomainException("La dirección es obligatoria.");
         ClienteId = clienteId;
         Ubicacion = ubicacion;
+    }
 
-        AddDomainEvent(new HogarRegistrado(id, direccion.Ciudad, direccion.Pais));
+    /// <summary>
+    /// Eleva HogarRegistrado con el Id real generado por la base de datos.
+    /// Debe llamarse desde el handler después de SaveChangesAsync().
+    /// </summary>
+    public void ConfirmarRegistro()
+    {
+        AddDomainEvent(new HogarRegistrado(Id, Direccion.Ciudad, Direccion.Pais));
     }
 
     public Habitacion AgregarHabitacion(int habitacionId, string nombre)

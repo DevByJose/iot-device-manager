@@ -29,8 +29,15 @@ public class Escena : AggregateRoot
         Nombre = nombre ?? throw new DomainException("El nombre de la escena es obligatorio.");
         HogarId = hogarId;
         Activa = true;
+    }
 
-        AddDomainEvent(new EscenaCreada(id, nombre.Valor));
+    /// <summary>
+    /// Eleva EscenaCreada con el Id real generado por la base de datos.
+    /// Debe llamarse desde el handler después de SaveChangesAsync().
+    /// </summary>
+    public void ConfirmarCreacion()
+    {
+        AddDomainEvent(new EscenaCreada(Id, Nombre.Valor));
     }
 
     public void AgregarAccion(int accionId, int orden, int dispositivoId, string comando, ParametroComando? parametro = null)

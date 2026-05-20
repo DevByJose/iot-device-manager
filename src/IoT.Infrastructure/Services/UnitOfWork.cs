@@ -1,4 +1,4 @@
-using IoT.Domain.Interfaces;
+using IoT.Application.Interfaces;
 using IoT.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Storage;
 

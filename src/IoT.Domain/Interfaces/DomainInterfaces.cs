@@ -65,23 +65,3 @@ public interface IEventPublisher
     Task PublishAllAsync(IEnumerable<BuildingBlocks.IDomainEvent> domainEvents);
 }
 
-/// <summary>
-/// Contrato para servicio de caché (ISP).
-/// </summary>
-public interface ICacheService
-{
-    Task<T?> GetAsync<T>(string key);
-    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
-    Task RemoveAsync(string key);
-}
-
-/// <summary>
-/// Contrato para Unit of Work — garantiza consistencia transaccional (SRP).
-/// </summary>
-public interface IUnitOfWork : IDisposable
-{
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-    Task BeginTransactionAsync();
-    Task CommitAsync();
-    Task RollbackAsync();
-}

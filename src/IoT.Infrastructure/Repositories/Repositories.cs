@@ -53,7 +53,7 @@ public class DispositivoRepository : IDispositivoRepository
         => await _db.Dispositivos.Where(d => d.HogarId == hogarId).ToListAsync();
 
     public async Task<bool> ExisteIdentificadorAsync(string identificadorFisico)
-        => await _db.Dispositivos.AnyAsync(d => EF.Property<string>(d.Identificador, "Valor") == identificadorFisico);
+        => await _db.Dispositivos.AnyAsync(d => d.Identificador.Valor == identificadorFisico);
 
     public async Task SaveAsync(Dispositivo dispositivo)
     {

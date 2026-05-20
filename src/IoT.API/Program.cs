@@ -1,5 +1,6 @@
 using IoT.API.Middleware;
 using IoT.Application.Handlers;
+using IoT.Application.Interfaces;
 using IoT.Domain.Interfaces;
 using IoT.Domain.Services;
 using IoT.Infrastructure.Messaging;

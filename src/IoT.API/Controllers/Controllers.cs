@@ -1,8 +1,8 @@
 using IoT.Application.Commands;
 using IoT.Application.Handlers;
+using IoT.Application.Interfaces;
 using IoT.Application.Queries;
 using IoT.Application.Validators;
-using IoT.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IoT.API.Controllers;

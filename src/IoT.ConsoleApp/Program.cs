@@ -1,5 +1,6 @@
 using IoT.Application.Commands;
 using IoT.Application.Handlers;
+using IoT.Application.Interfaces;
 using IoT.Application.Queries;
 using IoT.Domain.Exceptions;
 using IoT.Domain.Interfaces;

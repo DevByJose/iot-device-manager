@@ -1,5 +1,4 @@
-using IoT.Domain.BuildingBlocks;
-using IoT.Domain.Interfaces;
+using IoT.Application.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace IoT.Infrastructure.Services;

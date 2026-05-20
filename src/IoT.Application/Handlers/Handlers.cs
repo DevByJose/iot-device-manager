@@ -1,5 +1,6 @@
 using IoT.Application.Commands;
 using IoT.Application.DTOs;
+using IoT.Application.Interfaces;
 using IoT.Application.Mappings;
 using IoT.Application.Queries;
 using IoT.Domain.Entities;
@@ -33,6 +34,7 @@ public class RegistrarHogarHandler
 
         await _hogarRepo.SaveAsync(hogar);
         await _uow.SaveChangesAsync();
+        hogar.ConfirmarRegistro();
         await _eventPublisher.PublishAllAsync(hogar.DomainEvents);
         hogar.ClearDomainEvents();
 
@@ -110,6 +112,7 @@ public class CrearEscenaHandler
 
         await _escenaRepo.SaveAsync(escena);
         await _uow.SaveChangesAsync();
+        escena.ConfirmarCreacion();
         await _eventPublisher.PublishAllAsync(escena.DomainEvents);
         escena.ClearDomainEvents();
 
