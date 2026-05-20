@@ -37,6 +37,7 @@ builder.Services.AddScoped<SvcDeteccionAnomalia>();
 // === Capa de Aplicación: Handlers (orquestadores) ===
 builder.Services.AddScoped<RegistrarHogarHandler>();
 builder.Services.AddScoped<RegistrarDispositivoHandler>();
+builder.Services.AddScoped<CrearEscenaHandler>();
 builder.Services.AddScoped<EjecutarEscenaHandler>();
 builder.Services.AddScoped<ConsultarEstadoHandler>();
 builder.Services.AddScoped<ObtenerDispositivosHandler>();

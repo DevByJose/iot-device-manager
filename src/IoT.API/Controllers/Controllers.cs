@@ -1,14 +1,14 @@
 using IoT.Application.Commands;
 using IoT.Application.Handlers;
 using IoT.Application.Queries;
-using IoT.Domain.Exceptions;
+using IoT.Application.Validators;
+using IoT.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IoT.API.Controllers;
 
 /// <summary>
-/// Controller delgado para Hogares. Solo despacha a handlers (SRP).
-/// No contiene lógica de negocio ni accede a repositorios directamente.
+/// Controller delgado para Hogares. Valida en el boundary y maneja consistencia (SRP).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -18,23 +18,28 @@ public class HogarController : ControllerBase
     private readonly ObtenerHogaresHandler _obtenerHandler;
     private readonly AgregarHabitacionHandler _agregarHabitacionHandler;
     private readonly ObtenerHabitacionesHandler _obtenerHabitacionesHandler;
+    private readonly IUnitOfWork _uow;
 
     public HogarController(
         RegistrarHogarHandler registrarHandler,
         ObtenerHogaresHandler obtenerHandler,
         AgregarHabitacionHandler agregarHabitacionHandler,
-        ObtenerHabitacionesHandler obtenerHabitacionesHandler)
+        ObtenerHabitacionesHandler obtenerHabitacionesHandler,
+        IUnitOfWork uow)
     {
         _registrarHandler = registrarHandler;
         _obtenerHandler = obtenerHandler;
         _agregarHabitacionHandler = agregarHabitacionHandler;
         _obtenerHabitacionesHandler = obtenerHabitacionesHandler;
+        _uow = uow;
     }
 
     [HttpPost]
     public async Task<IActionResult> Registrar([FromBody] RegistrarHogarCommand command)
     {
+        CommandValidators.Validate(command);
         var result = await _registrarHandler.HandleAsync(command);
+        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(Registrar), new { id = result.Id }, result);
     }
 
@@ -48,7 +53,10 @@ public class HogarController : ControllerBase
     [HttpPost("{hogarId}/habitacion")]
     public async Task<IActionResult> AgregarHabitacion(int hogarId, [FromBody] AgregarHabitacionCommand command)
     {
-        var result = await _agregarHabitacionHandler.HandleAsync(command with { HogarId = hogarId });
+        var cmd = command with { HogarId = hogarId };
+        CommandValidators.Validate(cmd);
+        var result = await _agregarHabitacionHandler.HandleAsync(cmd);
+        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(ObtenerHabitaciones), new { hogarId, id = result.Id }, result);
     }
 
@@ -61,7 +69,7 @@ public class HogarController : ControllerBase
 }
 
 /// <summary>
-/// Controller delgado para Dispositivos (SRP).
+/// Controller delgado para Dispositivos. Valida en el boundary y maneja consistencia (SRP).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -69,17 +77,22 @@ public class DispositivoController : ControllerBase
 {
     private readonly RegistrarDispositivoHandler _registrarHandler;
     private readonly ObtenerDispositivosHandler _obtenerHandler;
+    private readonly IUnitOfWork _uow;
 
-    public DispositivoController(RegistrarDispositivoHandler registrarHandler, ObtenerDispositivosHandler obtenerHandler)
+    public DispositivoController(RegistrarDispositivoHandler registrarHandler,
+        ObtenerDispositivosHandler obtenerHandler, IUnitOfWork uow)
     {
         _registrarHandler = registrarHandler;
         _obtenerHandler = obtenerHandler;
+        _uow = uow;
     }
 
     [HttpPost]
     public async Task<IActionResult> Registrar([FromBody] RegistrarDispositivoCommand command)
     {
+        CommandValidators.Validate(command);
         var result = await _registrarHandler.HandleAsync(command);
+        await _uow.SaveChangesAsync();
         return CreatedAtAction(nameof(Registrar), new { id = result.DispositivoId }, result);
     }
 
@@ -92,24 +105,49 @@ public class DispositivoController : ControllerBase
 }
 
 /// <summary>
-/// Controller delgado para Escenas (SRP).
+/// Controller delgado para Escenas. Maneja el ciclo transaccional completo (SRP).
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class EscenaController : ControllerBase
 {
+    private readonly CrearEscenaHandler _crearHandler;
     private readonly EjecutarEscenaHandler _ejecutarHandler;
+    private readonly IUnitOfWork _uow;
 
-    public EscenaController(EjecutarEscenaHandler ejecutarHandler)
+    public EscenaController(CrearEscenaHandler crearHandler, EjecutarEscenaHandler ejecutarHandler, IUnitOfWork uow)
     {
+        _crearHandler = crearHandler;
         _ejecutarHandler = ejecutarHandler;
+        _uow = uow;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Crear([FromBody] CrearEscenaCommand command)
+    {
+        CommandValidators.Validate(command);
+        var result = await _crearHandler.HandleAsync(command);
+        await _uow.SaveChangesAsync();
+        return CreatedAtAction(nameof(Crear), new { id = result.Id }, result);
     }
 
     [HttpPost("{escenaId}/ejecutar")]
     public async Task<IActionResult> Ejecutar(int escenaId, [FromQuery] string origen = "manual")
     {
-        var result = await _ejecutarHandler.HandleAsync(new EjecutarEscenaCommand(escenaId, origen));
-        return Ok(result);
+        var command = new EjecutarEscenaCommand(escenaId, origen);
+        CommandValidators.Validate(command);
+        await _uow.BeginTransactionAsync();
+        try
+        {
+            var result = await _ejecutarHandler.HandleAsync(command);
+            await _uow.CommitAsync();
+            return Ok(result);
+        }
+        catch
+        {
+            await _uow.RollbackAsync();
+            throw;
+        }
     }
 }
 

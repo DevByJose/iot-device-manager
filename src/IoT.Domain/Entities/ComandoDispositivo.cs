@@ -8,7 +8,7 @@ namespace IoT.Domain.Entities;
 /// <summary>
 /// Orden concreta y auditable que se envía a un dispositivo físico.
 /// </summary>
-public class ComandoDispositivo : Entity
+public class ComandoDispositivo : AggregateRoot
 {
     public int DispositivoId { get; private set; }
     public string Comando { get; private set; }
@@ -37,6 +37,7 @@ public class ComandoDispositivo : Entity
         if (Estado != "Pendiente")
             throw new DomainException($"Solo se puede enviar un comando en estado Pendiente. Estado actual: {Estado}");
         Estado = "Enviado";
+        AddDomainEvent(new ComandoEnviado(Id, DispositivoId, Comando));
     }
 
     public void Confirmar()
@@ -44,11 +45,13 @@ public class ComandoDispositivo : Entity
         if (Estado != "Enviado")
             throw new DomainException($"Solo se puede confirmar un comando enviado. Estado actual: {Estado}");
         Estado = "Confirmado";
+        AddDomainEvent(new ComandoConfirmado(Id));
     }
 
     public void MarcarFallido(string motivo)
     {
         Estado = "Fallido";
         MotivoFallo = motivo;
+        AddDomainEvent(new ComandoFallido(Id, motivo));
     }
 }
