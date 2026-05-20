@@ -25,7 +25,6 @@ public class Program
 
         var serviceProvider = ConfigureServices();
 
-        // Asegurar que la base de datos existe
         using (var scope = serviceProvider.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<HogarConectadoDbContext>();
@@ -42,11 +41,23 @@ public class Program
             Console.WriteLine("============================================");
             Console.WriteLine("               MENU PRINCIPAL               ");
             Console.WriteLine("============================================");
-            Console.WriteLine("1. Registrar nuevo Hogar");
-            Console.WriteLine("2. Listar Hogares del Cliente 1");
-            Console.WriteLine("3. Registrar Dispositivo en Hogar");
-            Console.WriteLine("4. Listar Dispositivos de un Hogar");
-            Console.WriteLine("5. Salir");
+            Console.WriteLine("  --- HOGARES ---");
+            Console.WriteLine("  1.  Registrar nuevo Hogar");
+            Console.WriteLine("  2.  Listar Hogares del Cliente");
+            Console.WriteLine("  3.  Agregar Habitación a un Hogar");
+            Console.WriteLine("  4.  Listar Habitaciones de un Hogar");
+            Console.WriteLine("  --- DISPOSITIVOS ---");
+            Console.WriteLine("  5.  Registrar Dispositivo");
+            Console.WriteLine("  6.  Listar Dispositivos de un Hogar");
+            Console.WriteLine("  7.  Conectar Dispositivo");
+            Console.WriteLine("  8.  Desconectar Dispositivo");
+            Console.WriteLine("  9.  Enviar Comando a Dispositivo");
+            Console.WriteLine("  10. Consultar Estado de Dispositivo");
+            Console.WriteLine("  --- ESCENAS ---");
+            Console.WriteLine("  11. Crear Escena");
+            Console.WriteLine("  12. Ejecutar Escena");
+            Console.WriteLine("============================================");
+            Console.WriteLine("  0.  Salir");
             Console.WriteLine("============================================");
             Console.Write("Seleccione una opción: ");
 
@@ -56,24 +67,20 @@ public class Program
             {
                 switch (option)
                 {
-                    case "1":
-                        await RegistrarHogar(serviceProvider);
-                        break;
-                    case "2":
-                        await ListarHogares(serviceProvider);
-                        break;
-                    case "3":
-                        await RegistrarDispositivo(serviceProvider);
-                        break;
-                    case "4":
-                        await ListarDispositivos(serviceProvider);
-                        break;
-                    case "5":
-                        exit = true;
-                        break;
-                    default:
-                        Console.WriteLine("Opción no válida.");
-                        break;
+                    case "1":  await RegistrarHogar(serviceProvider); break;
+                    case "2":  await ListarHogares(serviceProvider); break;
+                    case "3":  await AgregarHabitacion(serviceProvider); break;
+                    case "4":  await ListarHabitaciones(serviceProvider); break;
+                    case "5":  await RegistrarDispositivo(serviceProvider); break;
+                    case "6":  await ListarDispositivos(serviceProvider); break;
+                    case "7":  await ConectarDispositivo(serviceProvider); break;
+                    case "8":  await DesconectarDispositivo(serviceProvider); break;
+                    case "9":  await EnviarComando(serviceProvider); break;
+                    case "10": await ConsultarEstado(serviceProvider); break;
+                    case "11": await CrearEscena(serviceProvider); break;
+                    case "12": await EjecutarEscena(serviceProvider); break;
+                    case "0":  exit = true; break;
+                    default:   Console.WriteLine("Opción no válida."); break;
                 }
             }
             catch (DomainException ex)
@@ -93,45 +100,55 @@ public class Program
         }
     }
 
+    // ─── DI ───────────────────────────────────────────────────────────────────
+
     private static IServiceProvider ConfigureServices()
     {
         var services = new ServiceCollection();
 
-        // Infraestructura: Base de datos SQLite
-        // Usamos una ruta absoluta o relativa al directorio de ejecución para compartir la misma BD
         string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "IoT.API", "hogarconectado.db");
-        services.AddDbContext<HogarConectadoDbContext>(options =>
-            options.UseSqlite($"Data Source={dbPath}"));
+        services.AddDbContext<HogarConectadoDbContext>(opt =>
+            opt.UseSqlite($"Data Source={dbPath}"));
 
-        // Infraestructura: Repositorios
+        // Repositorios
         services.AddScoped<IHogarRepository, HogarRepository>();
         services.AddScoped<IDispositivoRepository, DispositivoRepository>();
         services.AddScoped<IEscenaRepository, EscenaRepository>();
         services.AddScoped<IEstadoRepository, EstadoRepository>();
+        services.AddScoped<IComandoRepository, ComandoRepository>();
 
-        // Infraestructura: Servicios transversales
+        // Servicios transversales
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IEventPublisher, EventBusPublisher>();
         services.AddMemoryCache();
         services.AddSingleton<ICacheService, CacheService>();
 
-        // Dominio: Servicios
+        // Servicios de dominio
         services.AddScoped<SvcRegistroDispositivo>();
         services.AddScoped<SvcEjecucionEscena>();
         services.AddScoped<SvcValidacionComando>();
         services.AddScoped<SvcConsolidacionEstado>();
         services.AddScoped<SvcDeteccionAnomalia>();
 
-        // Aplicación: Handlers
+        // Handlers
         services.AddScoped<RegistrarHogarHandler>();
-        services.AddScoped<RegistrarDispositivoHandler>();
-        services.AddScoped<EjecutarEscenaHandler>();
-        services.AddScoped<ConsultarEstadoHandler>();
-        services.AddScoped<ObtenerDispositivosHandler>();
         services.AddScoped<ObtenerHogaresHandler>();
+        services.AddScoped<AgregarHabitacionHandler>();
+        services.AddScoped<ObtenerHabitacionesHandler>();
+        services.AddScoped<RegistrarDispositivoHandler>();
+        services.AddScoped<ObtenerDispositivosHandler>();
+        services.AddScoped<ConectarDispositivoHandler>();
+        services.AddScoped<DesconectarDispositivoHandler>();
+        services.AddScoped<EnviarComandoHandler>();
+        services.AddScoped<ConsultarEstadoHandler>();
+        services.AddScoped<CrearEscenaHandler>();
+        services.AddScoped<EjecutarEscenaHandler>();
+        services.AddScoped<ObtenerTelemetriaHandler>();
 
         return services.BuildServiceProvider();
     }
+
+    // ─── HOGARES ──────────────────────────────────────────────────────────────
 
     private static async Task RegistrarHogar(IServiceProvider provider)
     {
@@ -143,77 +160,220 @@ public class Program
         Console.Write("País: ");
         string pais = Console.ReadLine() ?? "";
 
-        var handler = provider.GetRequiredService<RegistrarHogarHandler>();
-        var command = new RegistrarHogarCommand(nombre, "Calle Falsa", "123", ciudad, pais, "00000", 1);
-        
-        var result = await handler.HandleAsync(command);
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<RegistrarHogarHandler>();
+        var result = await handler.HandleAsync(
+            new RegistrarHogarCommand(nombre, "Sin calle", "S/N", ciudad, pais, "00000", 1));
+
         Console.WriteLine($"\n¡Éxito! Hogar '{result.Nombre}' registrado con ID: {result.Id}");
     }
 
     private static async Task ListarHogares(IServiceProvider provider)
     {
-        Console.WriteLine("\n--- HOGARES DEL CLIENTE 1 ---");
-        var handler = provider.GetRequiredService<ObtenerHogaresHandler>();
-        var hogares = await handler.HandleAsync(new ObtenerHogaresQuery(1));
+        Console.Write("\nID del Cliente (default 1): ");
+        var input = Console.ReadLine();
+        int clienteId = string.IsNullOrWhiteSpace(input) ? 1 : int.Parse(input);
 
-        if (hogares.Count == 0)
-        {
-            Console.WriteLine("No se encontraron hogares.");
-            return;
-        }
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ObtenerHogaresHandler>();
+        var hogares = await handler.HandleAsync(new ObtenerHogaresQuery(clienteId));
+
+        Console.WriteLine($"\n--- HOGARES DEL CLIENTE {clienteId} ---");
+        if (hogares.Count == 0) { Console.WriteLine("No se encontraron hogares."); return; }
 
         foreach (var h in hogares)
-        {
-            Console.WriteLine($"- ID: {h.Id} | Nombre: {h.Nombre} | Ubicación: {h.Ciudad}, {h.Pais}");
-        }
+            Console.WriteLine($"  ID: {h.Id} | {h.Nombre} | {h.Ciudad}, {h.Pais} | Hab: {h.TotalHabitaciones} | Disp: {h.TotalDispositivos}");
     }
+
+    private static async Task AgregarHabitacion(IServiceProvider provider)
+    {
+        Console.WriteLine("\n--- AGREGAR HABITACIÓN ---");
+        Console.Write("ID del Hogar: ");
+        if (!int.TryParse(Console.ReadLine(), out int hogarId)) return;
+        Console.Write("Nombre de la Habitación (ej. Sala, Dormitorio): ");
+        string nombre = Console.ReadLine() ?? "";
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<AgregarHabitacionHandler>();
+        var result = await handler.HandleAsync(new AgregarHabitacionCommand(hogarId, nombre));
+
+        Console.WriteLine($"\n¡Éxito! Habitación '{result.Nombre}' agregada con ID: {result.Id}");
+    }
+
+    private static async Task ListarHabitaciones(IServiceProvider provider)
+    {
+        Console.Write("\nID del Hogar: ");
+        if (!int.TryParse(Console.ReadLine(), out int hogarId)) return;
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ObtenerHabitacionesHandler>();
+        var habitaciones = await handler.HandleAsync(new ObtenerHabitacionesQuery(hogarId));
+
+        Console.WriteLine($"\n--- HABITACIONES DEL HOGAR {hogarId} ---");
+        if (habitaciones.Count == 0) { Console.WriteLine("No se encontraron habitaciones."); return; }
+
+        foreach (var h in habitaciones)
+            Console.WriteLine($"  ID: {h.Id} | {h.Nombre}");
+    }
+
+    // ─── DISPOSITIVOS ─────────────────────────────────────────────────────────
 
     private static async Task RegistrarDispositivo(IServiceProvider provider)
     {
         Console.WriteLine("\n--- REGISTRAR DISPOSITIVO ---");
         Console.Write("ID del Hogar: ");
         if (!int.TryParse(Console.ReadLine(), out int hogarId)) return;
-
+        Console.Write("ID de la Habitación: ");
+        if (!int.TryParse(Console.ReadLine(), out int habitacionId)) return;
         Console.Write("Nombre del Dispositivo (ej. Luz Sala): ");
         string nombre = Console.ReadLine() ?? "";
-        Console.Write("Tipo (Smartlight/Camera/Alarm): ");
+        Console.Write("Tipo (Smartlight / Camera / Alarm): ");
         string tipo = Console.ReadLine() ?? "";
-        Console.Write("MAC Address o Serial: ");
+        Console.Write("Identificador físico (MAC/Serial único): ");
         string mac = Console.ReadLine() ?? "";
 
-        var handler = provider.GetRequiredService<RegistrarDispositivoHandler>();
-        // Usamos HabitacionId = 1 por defecto para el demo (asumiendo que existe o no lo valida estrictamente el repo si no está en memoria)
-        // Nota: Para que no falle, el hogar debería tener al menos una habitación.
-        // Simularemos que el handler lo permite, o podemos atrapar el error.
-        
-        // Vamos a pedir el ID de habitación
-        Console.Write("ID de la Habitación (debe existir en el hogar): ");
-        if (!int.TryParse(Console.ReadLine(), out int habitacionId)) return;
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<RegistrarDispositivoHandler>();
+        var result = await handler.HandleAsync(
+            new RegistrarDispositivoCommand(hogarId, nombre, tipo, mac, "MAC", 1, 0, 0, habitacionId));
 
-        var command = new RegistrarDispositivoCommand(hogarId, nombre, tipo, mac, "MAC", 1, 0, 0, habitacionId);
-        var result = await handler.HandleAsync(command);
-
-        Console.WriteLine($"\n¡Éxito! Dispositivo registrado con ID: {result.DispositivoId}");
+        Console.WriteLine($"\n¡Éxito! '{result.Nombre}' registrado con ID: {result.DispositivoId}");
     }
 
     private static async Task ListarDispositivos(IServiceProvider provider)
     {
-        Console.WriteLine("\n--- DISPOSITIVOS DEL HOGAR ---");
-        Console.Write("ID del Hogar: ");
+        Console.Write("\nID del Hogar: ");
         if (!int.TryParse(Console.ReadLine(), out int hogarId)) return;
 
-        var handler = provider.GetRequiredService<ObtenerDispositivosHandler>();
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ObtenerDispositivosHandler>();
         var dispositivos = await handler.HandleAsync(new ObtenerDispositivosQuery(hogarId));
 
-        if (dispositivos.Count == 0)
-        {
-            Console.WriteLine("No se encontraron dispositivos.");
-            return;
-        }
+        Console.WriteLine($"\n--- DISPOSITIVOS DEL HOGAR {hogarId} ---");
+        if (dispositivos.Count == 0) { Console.WriteLine("No se encontraron dispositivos."); return; }
 
         foreach (var d in dispositivos)
+            Console.WriteLine($"  ID: {d.Id} | {d.Nombre} ({d.TipoDispositivo}) | Estado: {d.Estado} | Hab: {d.Habitacion}");
+    }
+
+    private static async Task ConectarDispositivo(IServiceProvider provider)
+    {
+        Console.Write("\nID del Dispositivo a conectar: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return;
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ConectarDispositivoHandler>();
+        await handler.HandleAsync(id);
+
+        Console.WriteLine($"\n¡Éxito! Dispositivo {id} conectado (Online).");
+    }
+
+    private static async Task DesconectarDispositivo(IServiceProvider provider)
+    {
+        Console.Write("\nID del Dispositivo a desconectar: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return;
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<DesconectarDispositivoHandler>();
+        await handler.HandleAsync(id);
+
+        Console.WriteLine($"\n¡Éxito! Dispositivo {id} desconectado (Offline).");
+    }
+
+    private static async Task EnviarComando(IServiceProvider provider)
+    {
+        Console.WriteLine("\n--- ENVIAR COMANDO ---");
+        Console.Write("ID del Dispositivo: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return;
+        Console.Write("Comando (TurnOn/TurnOff/SetColor/StartRecording/Trigger/Stop): ");
+        string comando = Console.ReadLine() ?? "";
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<EnviarComandoHandler>();
+        var result = await handler.HandleAsync(new EnviarComandoCommand(id, comando));
+
+        Console.WriteLine($"\n¡Éxito! Comando '{result.Comando}' → Estado: {result.Estado} | ID Comando: {result.Id}");
+    }
+
+    private static async Task ConsultarEstado(IServiceProvider provider)
+    {
+        Console.Write("\nID del Dispositivo: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return;
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ConsultarEstadoHandler>();
+        var estado = await handler.HandleAsync(new ConsultarEstadoQuery(id));
+
+        if (estado == null) { Console.WriteLine("No se encontró estado para ese dispositivo."); return; }
+
+        Console.WriteLine($"\n--- ESTADO DEL DISPOSITIVO {id} ---");
+        Console.WriteLine($"  Estado:       {estado.Estado}");
+        Console.WriteLine($"  Conectado:    {estado.Conectado}");
+        Console.WriteLine($"  Último valor: {estado.UltimoValor?.ToString() ?? "N/A"}");
+        Console.WriteLine($"  Actualizado:  {estado.UltimaActualizacion:G}");
+        Console.WriteLine($"  Alertas:      {estado.TotalAlertas}");
+    }
+
+    // ─── ESCENAS ──────────────────────────────────────────────────────────────
+
+    private static async Task CrearEscena(IServiceProvider provider)
+    {
+        Console.WriteLine("\n--- CREAR ESCENA ---");
+        Console.Write("ID del Hogar: ");
+        if (!int.TryParse(Console.ReadLine(), out int hogarId)) return;
+        Console.Write("Nombre de la Escena (3-60 caracteres): ");
+        string nombre = Console.ReadLine() ?? "";
+
+        var acciones = new List<AccionEscenaInput>();
+        Console.WriteLine("Agrega acciones (Enter en ID de dispositivo para terminar):");
+        int orden = 1;
+        while (true)
         {
-            Console.WriteLine($"- ID: {d.Id} | {d.Nombre} ({d.TipoDispositivo}) | Estado: {d.Estado} | MAC: {d.Identificador}");
+            Console.Write($"  Acción {orden} - ID del Dispositivo (Enter para terminar): ");
+            var input = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(input)) break;
+            if (!int.TryParse(input, out int dispId)) break;
+
+            Console.Write($"  Acción {orden} - Comando: ");
+            string cmd = Console.ReadLine() ?? "";
+
+            acciones.Add(new AccionEscenaInput(orden, dispId, cmd));
+            orden++;
+        }
+
+        if (acciones.Count == 0) { Console.WriteLine("La escena debe tener al menos una acción."); return; }
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<CrearEscenaHandler>();
+        var result = await handler.HandleAsync(new CrearEscenaCommand(hogarId, nombre, acciones));
+
+        Console.WriteLine($"\n¡Éxito! Escena '{result.Nombre}' creada con ID: {result.Id} | Acciones: {result.TotalAcciones}");
+    }
+
+    private static async Task EjecutarEscena(IServiceProvider provider)
+    {
+        Console.Write("\nID de la Escena a ejecutar: ");
+        if (!int.TryParse(Console.ReadLine(), out int escenaId)) return;
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<EjecutarEscenaHandler>();
+        var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+        await uow.BeginTransactionAsync();
+        try
+        {
+            var result = await handler.HandleAsync(new EjecutarEscenaCommand(escenaId, "manual"));
+            await uow.CommitAsync();
+
+            Console.WriteLine($"\n¡Éxito! Escena {result.EscenaId} ejecutada.");
+            Console.WriteLine($"  Enviados: {result.ComandosEnviados} | Fallidos: {result.ComandosFallidos}");
+            foreach (var detalle in result.Detalles)
+                Console.WriteLine($"  {detalle}");
+        }
+        catch
+        {
+            await uow.RollbackAsync();
+            throw;
         }
     }
 }
