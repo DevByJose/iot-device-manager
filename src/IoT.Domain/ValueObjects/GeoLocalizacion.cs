@@ -8,9 +8,9 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class GeoLocalizacion : ValueObject
 {
-    public double Latitud { get; private set; }
-    public double Longitud { get; private set; }
-    public double RadioMetros { get; private set; }
+    public double Latitud { get; init; }
+    public double Longitud { get; init; }
+    public double RadioMetros { get; init; }
 
     private GeoLocalizacion() { }
 

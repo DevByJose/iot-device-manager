@@ -8,8 +8,8 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class IdentificadorFisico : ValueObject
 {
-    public string Valor { get; private set; }
-    public string TipoIdentificador { get; private set; }
+    public string Valor { get; init; }
+    public string TipoIdentificador { get; init; }
 
     private IdentificadorFisico() { Valor = string.Empty; TipoIdentificador = string.Empty; }
 

@@ -8,9 +8,9 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class ParametroComando : ValueObject
 {
-    public string Nombre { get; private set; }
-    public string Valor { get; private set; }
-    public string Tipo { get; private set; }
+    public string Nombre { get; init; }
+    public string Valor { get; init; }
+    public string Tipo { get; init; }
 
     private ParametroComando() { Nombre = string.Empty; Valor = string.Empty; Tipo = string.Empty; }
 

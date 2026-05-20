@@ -10,9 +10,9 @@ public sealed class CondicionDisparador : ValueObject
 {
     private static readonly HashSet<string> OperadoresValidos = new() { ">", "<", "=", "!=", ">=", "<=" };
 
-    public string OperandoIzquierdo { get; private set; }
-    public string Operador { get; private set; }
-    public string OperandoDerecho { get; private set; }
+    public string OperandoIzquierdo { get; init; }
+    public string Operador { get; init; }
+    public string OperandoDerecho { get; init; }
 
     private CondicionDisparador() { OperandoIzquierdo = string.Empty; Operador = string.Empty; OperandoDerecho = string.Empty; }
 

@@ -8,11 +8,11 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class DireccionFisica : ValueObject
 {
-    public string Calle { get; private set; }
-    public string Numero { get; private set; }
-    public string Ciudad { get; private set; }
-    public string Pais { get; private set; }
-    public string CodigoPostal { get; private set; }
+    public string Calle { get; init; }
+    public string Numero { get; init; }
+    public string Ciudad { get; init; }
+    public string Pais { get; init; }
+    public string CodigoPostal { get; init; }
 
     private DireccionFisica() { Calle = string.Empty; Numero = string.Empty; Ciudad = string.Empty; Pais = string.Empty; CodigoPostal = string.Empty; }
 

@@ -8,9 +8,9 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class UmbralSensor : ValueObject
 {
-    public double ValorMin { get; private set; }
-    public double ValorMax { get; private set; }
-    public string Unidad { get; private set; }
+    public double ValorMin { get; init; }
+    public double ValorMax { get; init; }
+    public string Unidad { get; init; }
 
     private UmbralSensor() { Unidad = string.Empty; }
 

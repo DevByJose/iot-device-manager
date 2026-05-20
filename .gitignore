@@ -2,6 +2,7 @@
 # 🟦 VS Code
 # =========================
 .vscode/
+.vs/
 obj/
 bin/
 *.exe

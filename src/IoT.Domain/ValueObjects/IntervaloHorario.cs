@@ -8,9 +8,9 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class IntervaloHorario : ValueObject
 {
-    public TimeOnly HoraInicio { get; private set; }
-    public TimeOnly HoraFin { get; private set; }
-    public IReadOnlyList<DayOfWeek> DiasSemana { get; private set; }
+    public TimeOnly HoraInicio { get; init; }
+    public TimeOnly HoraFin { get; init; }
+    public IReadOnlyList<DayOfWeek> DiasSemana { get; init; }
 
     private IntervaloHorario() { DiasSemana = new List<DayOfWeek>().AsReadOnly(); }
 

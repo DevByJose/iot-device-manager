@@ -8,7 +8,7 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class NombreEscena : ValueObject
 {
-    public string Valor { get; private set; }
+    public string Valor { get; init; }
 
     private NombreEscena() { Valor = string.Empty; }
 

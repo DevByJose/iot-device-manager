@@ -8,9 +8,9 @@ namespace IoT.Domain.ValueObjects;
 /// </summary>
 public sealed class VersionFirmware : ValueObject
 {
-    public int Major { get; private set; }
-    public int Minor { get; private set; }
-    public int Patch { get; private set; }
+    public int Major { get; init; }
+    public int Minor { get; init; }
+    public int Patch { get; init; }
 
     private VersionFirmware() { }
 
