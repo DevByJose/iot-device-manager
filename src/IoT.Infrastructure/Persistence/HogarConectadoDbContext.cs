@@ -87,7 +87,20 @@ public class HogarConectadoDbContext : DbContext
             e.HasKey(d => d.Id);
             e.Property(d => d.Tipo).IsRequired().HasMaxLength(30);
             e.OwnsOne(d => d.Condicion);
-            e.OwnsOne(d => d.Horario, h => h.Ignore(x => x.DiasSemana));
+            e.OwnsOne(d => d.Horario, h =>
+            {
+                h.Property(x => x.DiasSemana)
+                 .HasConversion(
+                     v => string.Join(',', v.Select(d => (int)d)),
+                     v => v == null || v.Length == 0
+                         ? (IReadOnlyList<DayOfWeek>)Array.Empty<DayOfWeek>()
+                         : (IReadOnlyList<DayOfWeek>)v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                              .Select(s => (DayOfWeek)int.Parse(s))
+                              .ToList()
+                              .AsReadOnly()
+                 )
+                 .HasColumnType("TEXT");
+            });
         });
 
         // EstadoDispositivo (Aggregate Root)

@@ -19,7 +19,7 @@ public class SvcEjecucionEscena
     {
         var acciones = escena.Ejecutar(origen);
         var comandos = new List<ComandoDispositivo>();
-        int comandoId = 1;
+        int comandoId = 0;
 
         foreach (var accion in acciones)
         {

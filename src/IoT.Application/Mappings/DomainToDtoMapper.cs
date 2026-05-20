@@ -12,10 +12,10 @@ public static class DomainToDtoMapper
         hogar.Id, hogar.Nombre, hogar.Direccion.Ciudad, hogar.Direccion.Pais,
         hogar.Dispositivos.Count, hogar.Habitaciones.Count);
 
-    public static DispositivoDto ToDto(Dispositivo dispositivo) => new(
+    public static DispositivoDto ToDto(Dispositivo dispositivo, string nombreHabitacion = "") => new(
         dispositivo.Id, dispositivo.Nombre, dispositivo.TipoDispositivo,
         dispositivo.Identificador.Valor, dispositivo.Estado, dispositivo.EstaConectado,
-        dispositivo.Firmware.ToString(), string.Empty);
+        dispositivo.Firmware.ToString(), nombreHabitacion);
 
     public static EscenaDto ToDto(Escena escena) => new(
         escena.Id, escena.Nombre.Valor, escena.Activa,
@@ -29,7 +29,16 @@ public static class DomainToDtoMapper
         lectura.Valor, lectura.Unidad, lectura.Timestamp);
 
     public static IReadOnlyList<DispositivoDto> ToDtoList(IEnumerable<Dispositivo> dispositivos)
-        => dispositivos.Select(ToDto).ToList().AsReadOnly();
+        => dispositivos.Select(d => ToDto(d)).ToList().AsReadOnly();
+
+    public static IReadOnlyList<DispositivoDto> ToDtoList(IEnumerable<Dispositivo> dispositivos, IEnumerable<Habitacion> habitaciones)
+    {
+        var map = habitaciones.ToDictionary(h => h.Id, h => h.Nombre);
+        return dispositivos
+            .Select(d => ToDto(d, map.TryGetValue(d.HabitacionId, out var nombre) ? nombre : string.Empty))
+            .ToList()
+            .AsReadOnly();
+    }
 
     public static IReadOnlyList<HogarDto> ToDtoList(IEnumerable<Hogar> hogares)
         => hogares.Select(ToDto).ToList().AsReadOnly();

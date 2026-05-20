@@ -19,6 +19,7 @@ builder.Services.AddScoped<IHogarRepository, HogarRepository>();
 builder.Services.AddScoped<IDispositivoRepository, DispositivoRepository>();
 builder.Services.AddScoped<IEscenaRepository, EscenaRepository>();
 builder.Services.AddScoped<IEstadoRepository, EstadoRepository>();
+builder.Services.AddScoped<IComandoRepository, ComandoRepository>();
 
 // === Capa de Infraestructura: UnitOfWork, EventPublisher, Cache ===
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

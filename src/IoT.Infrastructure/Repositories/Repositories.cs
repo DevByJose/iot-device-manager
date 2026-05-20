@@ -99,6 +99,22 @@ public class EscenaRepository : IEscenaRepository
 }
 
 /// <summary>
+/// Implementa IComandoRepository (LSP).
+/// </summary>
+public class ComandoRepository : IComandoRepository
+{
+    private readonly HogarConectadoDbContext _db;
+
+    public ComandoRepository(HogarConectadoDbContext db) => _db = db;
+
+    public async Task SaveAllAsync(IEnumerable<ComandoDispositivo> comandos)
+        => await _db.Comandos.AddRangeAsync(comandos);
+
+    public async Task<IReadOnlyList<ComandoDispositivo>> GetByDispositivoIdAsync(int dispositivoId)
+        => await _db.Comandos.Where(c => c.DispositivoId == dispositivoId).ToListAsync();
+}
+
+/// <summary>
 /// Implementa IEstadoRepository (LSP).
 /// </summary>
 public class EstadoRepository : IEstadoRepository

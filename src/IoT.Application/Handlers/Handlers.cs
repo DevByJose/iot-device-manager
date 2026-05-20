@@ -90,14 +90,16 @@ public class RegistrarDispositivoHandler
 public class EjecutarEscenaHandler
 {
     private readonly IEscenaRepository _escenaRepo;
+    private readonly IComandoRepository _comandoRepo;
     private readonly SvcEjecucionEscena _svcEjecucion;
     private readonly IUnitOfWork _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public EjecutarEscenaHandler(IEscenaRepository escenaRepo, SvcEjecucionEscena svcEjecucion,
-        IUnitOfWork uow, IEventPublisher eventPublisher)
+    public EjecutarEscenaHandler(IEscenaRepository escenaRepo, IComandoRepository comandoRepo,
+        SvcEjecucionEscena svcEjecucion, IUnitOfWork uow, IEventPublisher eventPublisher)
     {
         _escenaRepo = escenaRepo;
+        _comandoRepo = comandoRepo;
         _svcEjecucion = svcEjecucion;
         _uow = uow;
         _eventPublisher = eventPublisher;
@@ -116,6 +118,7 @@ public class EjecutarEscenaHandler
             var comandos = await _svcEjecucion.EjecutarAsync(escena, command.Origen);
 
             await _escenaRepo.SaveAsync(escena);
+            await _comandoRepo.SaveAllAsync(comandos);
             await _uow.CommitAsync();
             await _eventPublisher.PublishAllAsync(escena.DomainEvents);
             escena.ClearDomainEvents();
@@ -179,7 +182,7 @@ public class ObtenerDispositivosHandler
     {
         var hogar = await _hogarRepo.GetByIdAsync(query.HogarId);
         if (hogar == null) return new List<DispositivoDto>().AsReadOnly();
-        return DomainToDtoMapper.ToDtoList(hogar.Dispositivos);
+        return DomainToDtoMapper.ToDtoList(hogar.Dispositivos, hogar.Habitaciones);
     }
 }
 

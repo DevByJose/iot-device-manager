@@ -48,6 +48,15 @@ public interface IEstadoRepository
 }
 
 /// <summary>
+/// Contrato de repositorio para ComandoDispositivo. Separado del agregado Escena (ISP).
+/// </summary>
+public interface IComandoRepository
+{
+    Task SaveAllAsync(IEnumerable<ComandoDispositivo> comandos);
+    Task<IReadOnlyList<ComandoDispositivo>> GetByDispositivoIdAsync(int dispositivoId);
+}
+
+/// <summary>
 /// Contrato para publicación de eventos de dominio (DIP).
 /// </summary>
 public interface IEventPublisher
