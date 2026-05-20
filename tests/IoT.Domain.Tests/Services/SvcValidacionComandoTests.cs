@@ -7,7 +7,12 @@ namespace IoT.Domain.Tests.Services;
 
 public class SvcValidacionComandoTests
 {
-    private readonly SvcValidacionComando _svc = new();
+    private readonly SvcValidacionComando _svc = new(new IValidadorTipoDispositivo[]
+    {
+        new ValidadorSmartlight(),
+        new ValidadorCamera(),
+        new ValidadorAlarm()
+    });
 
     private static Dispositivo CrearDispositivo(string tipo, bool conectado = true)
     {

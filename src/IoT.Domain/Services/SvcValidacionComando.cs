@@ -4,26 +4,29 @@ using IoT.Domain.Exceptions;
 namespace IoT.Domain.Services;
 
 /// <summary>
-/// Verifica que un ComandoDispositivo sea válido para el tipo de dispositivo (SRP).
+/// Verifica disponibilidad del dispositivo y delega la validación de comando
+/// al validador correspondiente al tipo (OCP — cerrado a modificación, abierto a extensión).
 /// </summary>
 public class SvcValidacionComando
 {
-    private static readonly Dictionary<string, HashSet<string>> ComandosPorTipo = new()
+    private readonly IReadOnlyDictionary<string, IValidadorTipoDispositivo> _validadores;
+
+    public SvcValidacionComando(IEnumerable<IValidadorTipoDispositivo> validadores)
     {
-        ["Smartlight"] = new() { "TurnOn", "TurnOff", "SetColor", "SetSchedule" },
-        ["Camera"] = new() { "StartRecording", "CaptureSnapshot", "TurnOn", "TurnOff" },
-        ["Alarm"] = new() { "Trigger", "Stop", "TurnOn", "TurnOff" }
-    };
+        _validadores = validadores.ToDictionary(v => v.Tipo, StringComparer.OrdinalIgnoreCase);
+    }
 
     public void Validar(Dispositivo dispositivo, string comando)
     {
         if (!dispositivo.PuedeEjecutarComando())
-            throw new DomainException($"El dispositivo '{dispositivo.Nombre}' no admite comandos en estado '{dispositivo.Estado}'.");
+            throw new DomainException(
+                $"El dispositivo '{dispositivo.Nombre}' no admite comandos en estado '{dispositivo.Estado}'.");
 
-        if (ComandosPorTipo.TryGetValue(dispositivo.TipoDispositivo, out var comandosPermitidos))
+        if (_validadores.TryGetValue(dispositivo.TipoDispositivo, out var validador)
+            && !validador.EsComandoValido(comando))
         {
-            if (!comandosPermitidos.Contains(comando))
-                throw new DomainException($"El comando '{comando}' no es válido para dispositivos tipo '{dispositivo.TipoDispositivo}'.");
+            throw new DomainException(
+                $"El comando '{comando}' no es válido para dispositivos tipo '{dispositivo.TipoDispositivo}'.");
         }
     }
 }

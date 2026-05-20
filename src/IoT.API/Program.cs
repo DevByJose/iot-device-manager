@@ -23,10 +23,18 @@ builder.Services.AddScoped<IEstadoRepository, EstadoRepository>();
 builder.Services.AddScoped<IComandoRepository, ComandoRepository>();
 
 // === Capa de Infraestructura: UnitOfWork, EventPublisher, Cache ===
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+// UnitOfWork registrado una sola vez; ISaveChanges e IUnitOfWork resuelven la misma instancia por scope
+builder.Services.AddScoped<UnitOfWork>();
+builder.Services.AddScoped<ISaveChanges>(sp => sp.GetRequiredService<UnitOfWork>());
+builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
 builder.Services.AddSingleton<IEventPublisher, EventBusPublisher>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, CacheService>();
+
+// === Capa de Dominio: Validadores por tipo de dispositivo (OCP) ===
+builder.Services.AddSingleton<IValidadorTipoDispositivo, ValidadorSmartlight>();
+builder.Services.AddSingleton<IValidadorTipoDispositivo, ValidadorCamera>();
+builder.Services.AddSingleton<IValidadorTipoDispositivo, ValidadorAlarm>();
 
 // === Capa de Dominio: Servicios de dominio ===
 builder.Services.AddScoped<SvcRegistroDispositivo>();

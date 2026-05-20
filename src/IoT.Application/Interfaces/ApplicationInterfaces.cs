@@ -12,12 +12,20 @@ public interface ICacheService
 }
 
 /// <summary>
-/// Contrato para Unit of Work — garantiza consistencia transaccional. Definido en Application
-/// porque orquesta la persistencia de los casos de uso, implementado en Infrastructure (DIP).
+/// Interfaz mínima de persistencia (ISP). Los handlers que solo persisten
+/// dependen de esto, no de la interfaz de transacción completa.
 /// </summary>
-public interface IUnitOfWork : IDisposable
+public interface ISaveChanges : IDisposable
 {
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Extiende ISaveChanges con gestión de transacciones explícitas (ISP).
+/// Solo lo usan los controladores que coordinan operaciones complejas.
+/// </summary>
+public interface IUnitOfWork : ISaveChanges
+{
     Task BeginTransactionAsync();
     Task CommitAsync();
     Task RollbackAsync();

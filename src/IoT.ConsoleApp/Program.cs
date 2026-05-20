@@ -117,11 +117,18 @@ public class Program
         services.AddScoped<IEstadoRepository, EstadoRepository>();
         services.AddScoped<IComandoRepository, ComandoRepository>();
 
-        // Servicios transversales
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        // Servicios transversales — UnitOfWork registrado una sola vez, misma instancia por scope
+        services.AddScoped<UnitOfWork>();
+        services.AddScoped<ISaveChanges>(sp => sp.GetRequiredService<UnitOfWork>());
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<UnitOfWork>());
         services.AddSingleton<IEventPublisher, EventBusPublisher>();
         services.AddMemoryCache();
         services.AddSingleton<ICacheService, CacheService>();
+
+        // Validadores por tipo de dispositivo (OCP)
+        services.AddSingleton<IValidadorTipoDispositivo, ValidadorSmartlight>();
+        services.AddSingleton<IValidadorTipoDispositivo, ValidadorCamera>();
+        services.AddSingleton<IValidadorTipoDispositivo, ValidadorAlarm>();
 
         // Servicios de dominio
         services.AddScoped<SvcRegistroDispositivo>();

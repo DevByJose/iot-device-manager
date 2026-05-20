@@ -17,10 +17,10 @@ namespace IoT.Application.Handlers;
 public class RegistrarHogarHandler
 {
     private readonly IHogarRepository _hogarRepo;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public RegistrarHogarHandler(IHogarRepository hogarRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
+    public RegistrarHogarHandler(IHogarRepository hogarRepo, ISaveChanges uow, IEventPublisher eventPublisher)
     {
         _hogarRepo = hogarRepo;
         _uow = uow;
@@ -49,11 +49,11 @@ public class RegistrarDispositivoHandler
 {
     private readonly IHogarRepository _hogarRepo;
     private readonly SvcRegistroDispositivo _svcRegistro;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
     private readonly IEventPublisher _eventPublisher;
 
     public RegistrarDispositivoHandler(IHogarRepository hogarRepo, SvcRegistroDispositivo svcRegistro,
-        IUnitOfWork uow, IEventPublisher eventPublisher)
+        ISaveChanges uow, IEventPublisher eventPublisher)
     {
         _hogarRepo = hogarRepo;
         _svcRegistro = svcRegistro;
@@ -87,10 +87,10 @@ public class RegistrarDispositivoHandler
 public class CrearEscenaHandler
 {
     private readonly IEscenaRepository _escenaRepo;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public CrearEscenaHandler(IEscenaRepository escenaRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
+    public CrearEscenaHandler(IEscenaRepository escenaRepo, ISaveChanges uow, IEventPublisher eventPublisher)
     {
         _escenaRepo = escenaRepo;
         _uow = uow;
@@ -240,10 +240,10 @@ public class ObtenerHogaresHandler
 public class AgregarHabitacionHandler
 {
     private readonly IHogarRepository _hogarRepo;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
     private readonly IEventPublisher _eventPublisher;
 
-    public AgregarHabitacionHandler(IHogarRepository hogarRepo, IUnitOfWork uow, IEventPublisher eventPublisher)
+    public AgregarHabitacionHandler(IHogarRepository hogarRepo, ISaveChanges uow, IEventPublisher eventPublisher)
     {
         _hogarRepo = hogarRepo;
         _uow = uow;
@@ -274,11 +274,11 @@ public class EnviarComandoHandler
     private readonly IDispositivoRepository _dispositivoRepo;
     private readonly IComandoRepository _comandoRepo;
     private readonly SvcValidacionComando _svcValidacion;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
     private readonly IEventPublisher _eventPublisher;
 
     public EnviarComandoHandler(IDispositivoRepository dispositivoRepo, IComandoRepository comandoRepo,
-        SvcValidacionComando svcValidacion, IUnitOfWork uow, IEventPublisher eventPublisher)
+        SvcValidacionComando svcValidacion, ISaveChanges uow, IEventPublisher eventPublisher)
     {
         _dispositivoRepo = dispositivoRepo;
         _comandoRepo = comandoRepo;
@@ -317,10 +317,10 @@ public class ConectarDispositivoHandler
 {
     private readonly IDispositivoRepository _dispositivoRepo;
     private readonly IHogarRepository _hogarRepo;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
 
     public ConectarDispositivoHandler(IDispositivoRepository dispositivoRepo,
-        IHogarRepository hogarRepo, IUnitOfWork uow)
+        IHogarRepository hogarRepo, ISaveChanges uow)
     {
         _dispositivoRepo = dispositivoRepo;
         _hogarRepo = hogarRepo;
@@ -348,10 +348,10 @@ public class DesconectarDispositivoHandler
 {
     private readonly IDispositivoRepository _dispositivoRepo;
     private readonly IHogarRepository _hogarRepo;
-    private readonly IUnitOfWork _uow;
+    private readonly ISaveChanges _uow;
 
     public DesconectarDispositivoHandler(IDispositivoRepository dispositivoRepo,
-        IHogarRepository hogarRepo, IUnitOfWork uow)
+        IHogarRepository hogarRepo, ISaveChanges uow)
     {
         _dispositivoRepo = dispositivoRepo;
         _hogarRepo = hogarRepo;
